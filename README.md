@@ -1,7 +1,7 @@
 Installation
 ========================
 * From GitHub
-    * Clone repository 
+    * Clone repository - git@github.com:bobbymckinnon/glacial-beach-87918.git
     * composer install
     * bin/console server:run
     
@@ -9,11 +9,18 @@ Installation
     * cd into project directory
     * composer install
     * bin/console server:run
+    
+Information
+=======================  
+Starting point of the app is  AppBundle\Controller\GuideController
+This takes a FilterInterface object that is actually requesting the json data
+from the url provided in the challenge.
 
 API
 =======================
 * To access the api endpoint
     * http://127.0.0.1:8000/guide?budget=1000&days=2
+    
 * Running unit test
     * php vendor/bin/phpunit -c phpunit.xml.dist
     

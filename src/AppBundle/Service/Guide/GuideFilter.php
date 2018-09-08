@@ -8,8 +8,8 @@ use AppBundle\Service\GuideAPIInterface;
 
 class GuideFilter implements FilterInterface
 {
-    const DAY_MAX_MIN = 750;
-    const RELOCATION_MIN = 30;
+    const DAY_MAX_MIN       = 750;
+    const RELOCATION_MIN    = 30;
 
     /**
      * @var GuideAPIInterface
@@ -34,7 +34,7 @@ class GuideFilter implements FilterInterface
         $result = [];
         $data = $this->guideApi->fetch();
         $budget = 0;
-        $days = $options['days'];
+        $days = $options['days']?:1;
 
         for ($i = 1; $i <= $days; ++$i) {
             $cTime = 0;
