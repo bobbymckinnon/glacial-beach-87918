@@ -29,7 +29,15 @@ services:
         public: true
         tags: ['controller.service_arguments']
 
-    # add more services, or override services that need manual wiring
-    # AppBundle\Service\ExampleService:
-    #     arguments:
-    #         $someArgument: 'some_value'
+    app.guide.api:
+        class: AppBundle\Service\GuideApi
+
+    app.guide.api.filter:
+        class: AppBundle\Service\Guide\GuideFilter
+        arguments: ['@app.guide.api']
+
+    app.guide.controller:
+        class: AppBundle\Controller\GuideController
+        arguments: ['@app.guide.api.filter']
+
+
