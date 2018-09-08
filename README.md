@@ -12,6 +12,7 @@ Installation
     
 Information
 =======================  
+This app is using an out of the box symfony 3.4 as a base. (sorry about the over head)
 Starting point of the app is  AppBundle\Controller\GuideController
 This takes a FilterInterface object that is actually requesting the json data
 from the url provided in the challenge.
