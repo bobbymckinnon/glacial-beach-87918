@@ -31,8 +31,8 @@ class GuideFilter implements FilterInterface
      */
     public function handle(array $options): array
     {
-        $e = [];
         $result = [];
+        $tourIds = [];
         $data = $this->guideApi->fetch();
         $budget = 0;
         $days = $options['days'] ?: 1;
@@ -42,9 +42,10 @@ class GuideFilter implements FilterInterface
             $start = new \DateTime('tomorrow');
             $start->setTime(10, 00);
             $start->add(new \DateInterval('P' . $i . 'D'));
+
             if (isset($result['schedule'])) {
                 foreach ($result['schedule'] as $key) {
-                    $e = array_merge($e, array_values(array_column($key, 'id')));
+                    $tourIds = array_merge($tourIds, array_values(array_column($key, 'id')));
                 }
             }
 
@@ -53,7 +54,7 @@ class GuideFilter implements FilterInterface
                     self::DAY_MAX_MIN >= $cTime + ($item['duration'] + 30)) &&
                     !isset($result['schedule'][$i][$item['id']]) &&
                     $options['budget'] >= $budget + $item['price'] &&
-                    !\in_array($item['id'], $e, true)
+                    !\in_array($item['id'], $tourIds, true)
                 ) {
                     $startT = clone $start;
                     $startT->add(new \DateInterval('PT' . $cTime . 'M'));
