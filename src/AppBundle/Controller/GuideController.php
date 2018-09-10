@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AppBundle\Controller;
 
 use AppBundle\Service\Guide\FilterInterface;
+
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+
 use Symfony\Component\Routing\Annotation\Route;
 
 class GuideController extends Controller
@@ -29,7 +31,7 @@ class GuideController extends Controller
     public function indexAction(Request $request)
     {
         if ($request->get('budget') <= 99 || $request->get('budget') >= 5000) {
-            return new JsonResponse(['Invalid Budget'], Response::HTTP_NOT_FOUND);
+            return new JsonResponse(['Invalid Budget'], 400);
         }
 
         $response = $this->filter->handle([
