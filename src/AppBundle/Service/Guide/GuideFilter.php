@@ -8,8 +8,14 @@ use AppBundle\Service\GuideAPIInterface;
 
 class GuideFilter implements FilterInterface
 {
+    /** DAY_MAX_MIN the max number of minutes per day */
     const DAY_MAX_MIN = 750;
+
+    /** RELOCATION_MIN time allotted between events */
     const RELOCATION_MIN = 30;
+
+    /** DAILY_EVENT_MIN min number of events to be scheduled per day */
+    const DAILY_EVENT_MIN = 3;
 
     /**
      * @var GuideAPIInterface
@@ -32,88 +38,78 @@ class GuideFilter implements FilterInterface
     public function handle(array $options): array
     {
         $result = [];
-        $tourIds = [];
         $data = $this->guideApi->fetch();
 
         $days = (int) $options['days'] ?: 1;
         $dailyBudget = intdiv((int) $options['budget'], $days);
-        $budgetSpent = 0;
 
-        for ($i = 1; $i <= $days; ++$i) {
-            $budget = 0;
-            $cTime = 0;
-            $eventSet = [];
-            $start = new \DateTime('tomorrow');
-            $start->setTime(10, 00);
-            $start->add(new \DateInterval('P' . $i . 'D'));
+        $events = $this->buildEventTree($data, $dailyBudget);
 
-            if (isset($result['schedule'])) {
-                foreach ($result['schedule'] as $key) {
-                    $tourIds = array_merge($tourIds, array_values(array_column($key, 'id')));
-                }
-            } else {
-                $result['schedule'] = [];
-            }
+        $events = $this->normalizeEvents($events, $days);
 
-            foreach ($data as $item) {
-                if ((self::DAY_MAX_MIN >= $cTime &&
-                    self::DAY_MAX_MIN >= $cTime + ($item['duration'] + 30)) &&
-                    !isset($result['schedule'][$i][$item['id']]) &&
-                    $dailyBudget >= $budget + $item['price'] &&
-                    !\in_array($item['id'], $tourIds, true)
-                ) {
-                    $startT = clone $start;
-                    $startT->add(new \DateInterval('PT' . $cTime . 'M'));
-                    $eventKey = $startT->format('H:i:s');
+        $totalActivities = array_sum(array_column($events, 'total'));
+        $totalCosts = array_sum(array_column($events, 'total_price'));
 
-                    $eventSet[$eventKey] = [
-                        'id' => $item['id'],
-                        'duration' => $item['duration'],
-                        'price' => $item['price'],
-                    ];
-                    $budget += $item['price'];
-                    $cTime = $cTime + ($item['duration'] + 30);
-                }
-
-                if (count($eventSet) >= 3) {
-                    $result['schedule'][$i] = $eventSet;
-                }
-            }
-            $budgetSpent += $budget;
-        }
-        $totalActivities = array_values(array_map('count', $result['schedule']));
+        $result['schedule'] = $events;
 
         $summary = [
-            'budget_spent' => $budgetSpent,
-            'time_in_relocation' => array_sum($totalActivities) * self::RELOCATION_MIN,
-            'total_activities' => array_sum($totalActivities),
-            'cc' => count($this->buildEventTree($data)),
+            'budget_spent' => $totalCosts,
+            'time_in_relocation' => $totalActivities * self::RELOCATION_MIN,
+            'total_activities' => $totalActivities,
         ];
 
         return array_merge(['summary' => $summary], $result);
     }
 
-    public function buildEventTree($data):array {
+    /**
+     * @param array $events
+     * @param int   $days
+     *
+     * @return array
+     */
+    private function normalizeEvents(array $events, int $days): array
+    {
         $result = [];
-        $tourIds = [];
+        array_multisort(array_column($events, 'total_price'), SORT_DESC, $events);
+        $i = 0;
+        foreach ($events as $event) {
+            ++$i;
+            if ($i <= $days) {
+                $result[$i] = $event;
+            }
+        }
 
+        return $result;
+    }
+
+    /**
+     * @param array $data
+     * @param int   $dailyBudget
+     * @param int   $perDay
+     *
+     * @return array
+     */
+    private function buildEventTree(array $data, int $dailyBudget, int $perDay = self::DAILY_EVENT_MIN): array
+    {
+        $result = $eventIds = [];
         $days = 100;
 
         for ($i = 1; $i <= $days; ++$i) {
-            $cTime = 0;
+            $cTime = $budget = 0;
             $eventGroup = [];
             $start = new \DateTime('tomorrow');
             $start->setTime(10, 00);
             $start->add(new \DateInterval('P' . $i . 'D'));
 
             foreach ($result as $key) {
-                $tourIds = array_merge($tourIds, array_values(array_column($key, 'id')));
+                $eventIds = array_merge($eventIds, array_values(array_column($key, 'id')));
             }
 
             foreach ($data as $item) {
-                if ((self::DAY_MAX_MIN >= $cTime && self::DAY_MAX_MIN >= $cTime + ($item['duration'] + 30)) &&
+                if ((self::DAY_MAX_MIN >= $cTime && self::DAY_MAX_MIN >= $cTime + ($item['duration'] + self::RELOCATION_MIN)) &&
                     !isset($result[$i][$item['id']]) &&
-                    !\in_array($item['id'], $tourIds, true)
+                    $dailyBudget >= $budget + $item['price'] &&
+                    !\in_array($item['id'], $eventIds, true)
                 ) {
                     $startT = clone $start;
                     $startT->add(new \DateInterval('PT' . $cTime . 'M'));
@@ -124,12 +120,14 @@ class GuideFilter implements FilterInterface
                         'duration' => $item['duration'],
                         'price' => $item['price'],
                     ];
-                    $cTime = $cTime + ($item['duration'] + 30);
+                    $cTime = $cTime + ($item['duration'] + self::RELOCATION_MIN);
+                    $budget += $item['price'];
                 }
 
-                if (count($eventGroup) >= 3) {
+                if (\count($eventGroup) >= $perDay) {
                     $eventGroup['total_price'] = self::eventGroupPrice($eventGroup);
                     $eventGroup['total_duration'] = self::eventGroupDuration($eventGroup);
+                    $eventGroup['total'] = self::eventGroupTotal($eventGroup);
 
                     $result[$i] = $eventGroup;
                 }
@@ -141,6 +139,7 @@ class GuideFilter implements FilterInterface
 
     /**
      * @param array $eventGroup
+     *
      * @return int
      */
     private static function eventGroupPrice(array $eventGroup): int
@@ -150,10 +149,21 @@ class GuideFilter implements FilterInterface
 
     /**
      * @param array $eventGroup
+     *
      * @return int
      */
     private static function eventGroupDuration(array $eventGroup): int
     {
         return array_sum(array_column($eventGroup, 'duration'));
+    }
+
+    /**
+     * @param array $eventGroup
+     *
+     * @return int
+     */
+    private static function eventGroupTotal(array $eventGroup): int
+    {
+        return \count(array_column($eventGroup, 'id'));
     }
 }

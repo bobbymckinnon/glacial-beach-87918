@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace AppBundle\Controller;
 
 use AppBundle\Service\Guide\FilterInterface;
-
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-
 use Symfony\Component\Routing\Annotation\Route;
 
 class GuideController extends Controller

@@ -56,7 +56,6 @@ class GuideFilterTest extends \PHPUnit\Framework\TestCase
         ]);
 
         $this->assertCount(1, $result['schedule']);
-        $this->assertCount(3, $result['schedule'][1]);
         $this->assertEquals(819, $result['summary']['budget_spent']);
         $this->assertEquals(90, $result['summary']['time_in_relocation']);
         $this->assertEquals(3, $result['summary']['total_activities']);
