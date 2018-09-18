@@ -94,6 +94,11 @@ class GuideFilter implements FilterInterface
         $result = $eventIds = [];
         $days = 100;
 
+        usort($data, function($a, $b) {
+            return $a['price'] - $b['price'];
+
+        });
+
         for ($i = 1; $i <= $days; ++$i) {
             $cTime = $budget = 0;
             $eventGroup = [];
@@ -128,6 +133,8 @@ class GuideFilter implements FilterInterface
                     $eventGroup['total_price'] = self::eventGroupPrice($eventGroup);
                     $eventGroup['total_duration'] = self::eventGroupDuration($eventGroup);
                     $eventGroup['total'] = self::eventGroupTotal($eventGroup);
+
+                    //echo '-'.$eventGroup['total'];
 
                     $result[$i] = $eventGroup;
                 }
