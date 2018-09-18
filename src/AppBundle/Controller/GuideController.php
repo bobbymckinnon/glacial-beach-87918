@@ -34,8 +34,9 @@ class GuideController extends Controller
 
         $response = $this->filter->handle([
             'budget' => $request->get('budget'),
-            'days' => $request->get('days'), ]
-        );
+            'days' => $request->get('days'),
+            'priority' => $request->get('priority'),
+        ]);
 
         return new JsonResponse($response, Response::HTTP_OK);
     }

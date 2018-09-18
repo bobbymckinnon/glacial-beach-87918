@@ -43,6 +43,10 @@ class GuideFilter implements FilterInterface
         $days = (int) $options['days'] ?: 1;
         $dailyBudget = intdiv((int) $options['budget'], $days);
 
+        if (isset($options['priority'])) {
+            $data = self::withPriority($data, $options['priority']);
+        }
+
         $events = $this->buildEventTree($data, $dailyBudget);
 
         $events = $this->normalizeEvents($events, $days);
@@ -94,11 +98,6 @@ class GuideFilter implements FilterInterface
         $result = $eventIds = [];
         $days = 100;
 
-        usort($data, function($a, $b) {
-            return $a['price'] - $b['price'];
-
-        });
-
         for ($i = 1; $i <= $days; ++$i) {
             $cTime = $budget = 0;
             $eventGroup = [];
@@ -134,14 +133,31 @@ class GuideFilter implements FilterInterface
                     $eventGroup['total_duration'] = self::eventGroupDuration($eventGroup);
                     $eventGroup['total'] = self::eventGroupTotal($eventGroup);
 
-                    //echo '-'.$eventGroup['total'];
-
                     $result[$i] = $eventGroup;
                 }
             }
         }
 
         return $result;
+    }
+
+    /**
+     * @param array  $data
+     * @param string $col
+     *
+     * @return array
+     */
+    private static function withPriority(array $data, string $col): array
+    {
+        if (!\in_array($col, ['price', 'duration'], true)) {
+            return $data;
+        }
+
+        usort($data, function ($a, $b) use ($col) {
+            return $a[$col] - $b[$col];
+        });
+
+        return $data;
     }
 
     /**
