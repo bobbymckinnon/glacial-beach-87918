@@ -22,6 +22,7 @@ API
 * To access the api endpoint
     * https://glacial-beach-87918.herokuapp.com/guide?budget=1000&days=2
     * https://glacial-beach-87918.herokuapp.com/guide?budget=2121&days=2
+    * https://glacial-beach-87918.herokuapp.com/guide?budget=300&days=1&priority=price
     
 * Running unit test
     * php vendor/bin/phpunit -c phpunit.xml.dist
